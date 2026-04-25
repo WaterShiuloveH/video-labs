@@ -35,6 +35,9 @@ endif()
 add_executable(video_labs_phase1 src/main.cpp)
 target_link_libraries(video_labs_phase1 PRIVATE video_labs_core)
 
+add_executable(video_labs_benchmark benchmarks/phase2_baseline.cpp)
+target_link_libraries(video_labs_benchmark PRIVATE video_labs_core)
+
 enable_testing()
 
 add_executable(video_labs_tests test/thread_safe_queue_test.cpp)

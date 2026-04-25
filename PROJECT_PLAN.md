@@ -68,7 +68,7 @@ Build a production-grade C++ video processing system using concurrent programmin
 **Implementation Details:**
 
 - Extend single consumer to multiple consumers (Thread Pool)
-- Introduce `std::chrono` for high-resolution timing
+- Introduce `std::chrono` for steady timing
 - Measure throughput and latency improvements
 - Compare single-threaded vs multi-threaded performance
 
@@ -87,10 +87,15 @@ Build a production-grade C++ video processing system using concurrent programmin
    - [ ] Refactor consumer logic for pool integration
 
 2. **Benchmarking Infrastructure**
-   - [ ] Add `BenchmarkTimer` using `std::chrono::high_resolution_clock`
+   - [x] Add `BenchmarkTimer` using `std::chrono::steady_clock`
    - [ ] Implement throughput measurement (items/second)
    - [ ] Implement latency measurement (P50, P99, max)
    - [ ] Add statistics aggregation (mean, stddev, histogram)
+
+### Phase 2 Progress Notes
+
+- Added `video_labs_benchmark` as the single producer / single consumer baseline.
+- `./build/video_labs_benchmark --items 100000`: processed 100000 items with checksum validation.
 
 3. **Producer Enhancement**
    - [ ] Adjust producer rate to stress-test the queue
