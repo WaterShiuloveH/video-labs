@@ -96,11 +96,12 @@ Build a production-grade C++ video processing system using concurrent programmin
 
 - Added `video_labs_benchmark` as the single producer / single consumer baseline.
 - `./build/video_labs_benchmark --items 100000`: processed 100000 items with checksum validation.
+- Added `--producer-delay-us`, `--consumer-work`, and `--burst-size` benchmark controls.
 
 3. **Producer Enhancement**
    - [ ] Adjust producer rate to stress-test the queue
-   - [ ] Add configurable delay between productions
-   - [ ] Implement burst production mode
+   - [x] Add configurable delay between productions
+   - [x] Implement burst production mode
 
 4. **Benchmark Suite**
    - [ ] Create benchmarks: 1 producer vs 1-16 consumers
