@@ -194,6 +194,21 @@ Build a production-grade C++ video processing system using concurrent programmin
 | Testing      | Google Test (optional)                                 |
 | Code Quality | ThreadSanitizer, AddressSanitizer                      |
 
+## Common Commands
+
+```bash
+make build
+make test
+make run-phase1
+make run-phase2 ITEMS=100000 WORK=100 CONSUMERS=4
+make test-tsan
+make run-tsan ITEMS=10000 WORK=10 CONSUMERS=4
+make clean
+make rebuild
+make rebuild-tsan
+make rebuild-all
+```
+
 ---
 
 ## Success Criteria
