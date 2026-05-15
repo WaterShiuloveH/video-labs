@@ -94,8 +94,8 @@ Build a production-grade C++ video processing system using concurrent programmin
 
 ### Phase 2 Progress Notes
 
-- Added `video_labs_benchmark` as the single producer / single consumer baseline.
-- `./build/video_labs_benchmark --items 100000`: processed 100000 items with checksum validation.
+- Added `video_labs_phase2` as the single producer / single consumer baseline.
+- `./build/video_labs_phase2 --items 100000`: processed 100000 items with checksum validation.
 - Added `--producer-delay-us`, `--consumer-work`, and `--burst-size` benchmark controls.
 - Added `--consumers` to compare one producer against multiple consumer threads.
 
