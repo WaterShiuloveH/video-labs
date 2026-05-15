@@ -83,7 +83,7 @@ Build a production-grade C++ video processing system using concurrent programmin
 1. **Thread Pool Implementation**
    - [ ] Design `ThreadPool` class with worker threads
    - [ ] Implement dynamic worker thread management
-   - [ ] Add configurable pool size (e.g., 2, 4, 8, 16 workers)
+   - [x] Add configurable pool size (e.g., 2, 4, 8, 16 workers)
    - [ ] Refactor consumer logic for pool integration
 
 2. **Benchmarking Infrastructure**
@@ -97,6 +97,7 @@ Build a production-grade C++ video processing system using concurrent programmin
 - Added `video_labs_benchmark` as the single producer / single consumer baseline.
 - `./build/video_labs_benchmark --items 100000`: processed 100000 items with checksum validation.
 - Added `--producer-delay-us`, `--consumer-work`, and `--burst-size` benchmark controls.
+- Added `--consumers` to compare one producer against multiple consumer threads.
 
 3. **Producer Enhancement**
    - [ ] Adjust producer rate to stress-test the queue
@@ -104,7 +105,7 @@ Build a production-grade C++ video processing system using concurrent programmin
    - [x] Implement burst production mode
 
 4. **Benchmark Suite**
-   - [ ] Create benchmarks: 1 producer vs 1-16 consumers
+   - [x] Create benchmarks: 1 producer vs 1-16 consumers
    - [ ] Run with different queue loads (100K, 1M, 10M items)
    - [ ] Measure CPU utilization and memory usage
    - [ ] Log results to CSV for analysis

@@ -6,6 +6,7 @@
 #include <iostream>
 #include <string_view>
 #include <thread>
+#include <vector>
 
 namespace {
 
@@ -17,6 +18,13 @@ struct BenchmarkConfig {
     int producer_delay_us = 0;
     int consumer_work = 0;
     int burst_size = 1;
+    int consumer_count = 1;
+};
+
+struct ConsumerStats {
+    int consumed_count = 0;
+    long long checksum = 0;
+    long long work_checksum = 0;
 };
 
 void print_usage(std::string_view program_name)
@@ -25,7 +33,8 @@ void print_usage(std::string_view program_name)
               << " [--items positive_integer]"
               << " [--producer-delay-us non_negative_integer]"
               << " [--consumer-work non_negative_integer]"
-              << " [--burst-size positive_integer]\n";
+              << " [--burst-size positive_integer]"
+              << " [--consumers positive_integer]\n";
 }
 
 bool parse_non_negative_int(char* raw_value, int& parsed_value)
@@ -79,6 +88,11 @@ bool parse_config(int argc, char* argv[], BenchmarkConfig& config)
                 print_usage(argv[0]);
                 return false;
             }
+        } else if (option == "--consumers") {
+            if (!parse_positive_int(raw_value, config.consumer_count)) {
+                print_usage(argv[0]);
+                return false;
+            }
         } else {
             print_usage(argv[0]);
             return false;
@@ -108,9 +122,9 @@ int main(int argc, char* argv[])
     }
 
     video_labs::ThreadSafeQueue<int> queue;
-    int consumed_count = 0;
-    long long checksum = 0;
-    long long work_checksum = 0;
+    std::vector<ConsumerStats> consumer_stats(static_cast<std::size_t>(config.consumer_count));
+    std::vector<std::thread> consumers;
+    consumers.reserve(static_cast<std::size_t>(config.consumer_count));
 
     video_labs::BenchmarkTimer timer;
 
@@ -124,44 +138,62 @@ int main(int argc, char* argv[])
                     std::chrono::microseconds(config.producer_delay_us));
             }
         }
-        queue.push(poison_pill);
-    });
-
-    std::thread consumer([&queue, &config, &consumed_count, &checksum, &work_checksum] {
-        while (true) {
-            const int value = queue.pop();
-            if (value == poison_pill) {
-                break;
-            }
-
-            ++consumed_count;
-            checksum += value;
-            work_checksum += simulate_consumer_work(value, config.consumer_work);
+        for (int index = 0; index < config.consumer_count; ++index) {
+            queue.push(poison_pill);
         }
     });
 
+    for (int index = 0; index < config.consumer_count; ++index) {
+        consumers.emplace_back([&queue, &config, &consumer_stats, index] {
+            ConsumerStats local_stats;
+
+            while (true) {
+                const int value = queue.pop();
+                if (value == poison_pill) {
+                    break;
+                }
+
+                ++local_stats.consumed_count;
+                local_stats.checksum += value;
+                local_stats.work_checksum += simulate_consumer_work(value, config.consumer_work);
+            }
+
+            consumer_stats[static_cast<std::size_t>(index)] = local_stats;
+        });
+    }
+
     producer.join();
-    consumer.join();
+    for (auto& consumer : consumers) {
+        consumer.join();
+    }
+
+    ConsumerStats total_stats;
+    for (const auto& stats : consumer_stats) {
+        total_stats.consumed_count += stats.consumed_count;
+        total_stats.checksum += stats.checksum;
+        total_stats.work_checksum += stats.work_checksum;
+    }
 
     const double elapsed_seconds = timer.elapsed_seconds();
-    const double throughput = static_cast<double>(consumed_count) / elapsed_seconds;
+    const double throughput = static_cast<double>(total_stats.consumed_count) / elapsed_seconds;
     const long long expected_checksum =
         (static_cast<long long>(config.item_count - 1) * config.item_count) / 2;
 
     std::cout << "phase=2_baseline\n";
     std::cout << "producers=1\n";
-    std::cout << "consumers=1\n";
+    std::cout << "consumers=" << config.consumer_count << '\n';
     std::cout << "items=" << config.item_count << '\n';
     std::cout << "producer_delay_us=" << config.producer_delay_us << '\n';
     std::cout << "consumer_work=" << config.consumer_work << '\n';
     std::cout << "burst_size=" << config.burst_size << '\n';
-    std::cout << "consumed=" << consumed_count << '\n';
+    std::cout << "consumed=" << total_stats.consumed_count << '\n';
     std::cout << "elapsed_seconds=" << elapsed_seconds << '\n';
     std::cout << "throughput_items_per_second=" << throughput << '\n';
-    std::cout << "checksum=" << checksum << '\n';
-    std::cout << "work_checksum=" << work_checksum << '\n';
+    std::cout << "checksum=" << total_stats.checksum << '\n';
+    std::cout << "work_checksum=" << total_stats.work_checksum << '\n';
 
-    if (consumed_count != config.item_count || checksum != expected_checksum) {
+    if (total_stats.consumed_count != config.item_count
+        || total_stats.checksum != expected_checksum) {
         std::cerr << "Benchmark validation failed\n";
         return 1;
     }
