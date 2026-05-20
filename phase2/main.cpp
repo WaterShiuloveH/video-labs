@@ -1,4 +1,5 @@
 #include "video_labs/benchmark_timer.hpp"
+#include "video_labs/thread_pool.hpp"
 #include "video_labs/thread_safe_queue.hpp"
 
 #include <chrono>
@@ -123,8 +124,6 @@ int main(int argc, char* argv[])
 
     video_labs::ThreadSafeQueue<int> queue;
     std::vector<ConsumerStats> consumer_stats(static_cast<std::size_t>(config.consumer_count));
-    std::vector<std::thread> consumers;
-    consumers.reserve(static_cast<std::size_t>(config.consumer_count));
 
     video_labs::BenchmarkTimer timer;
 
@@ -143,29 +142,26 @@ int main(int argc, char* argv[])
         }
     });
 
-    for (int index = 0; index < config.consumer_count; ++index) {
-        consumers.emplace_back([&queue, &config, &consumer_stats, index] {
-            ConsumerStats local_stats;
+    video_labs::ThreadPool consumer_pool(static_cast<std::size_t>(config.consumer_count));
+    consumer_pool.start([&queue, &config, &consumer_stats](std::size_t index) {
+        ConsumerStats local_stats;
 
-            while (true) {
-                const int value = queue.pop();
-                if (value == poison_pill) {
-                    break;
-                }
-
-                ++local_stats.consumed_count;
-                local_stats.checksum += value;
-                local_stats.work_checksum += simulate_consumer_work(value, config.consumer_work);
+        while (true) {
+            const int value = queue.pop();
+            if (value == poison_pill) {
+                break;
             }
 
-            consumer_stats[static_cast<std::size_t>(index)] = local_stats;
-        });
-    }
+            ++local_stats.consumed_count;
+            local_stats.checksum += value;
+            local_stats.work_checksum += simulate_consumer_work(value, config.consumer_work);
+        }
+
+        consumer_stats[index] = local_stats;
+    });
 
     producer.join();
-    for (auto& consumer : consumers) {
-        consumer.join();
-    }
+    consumer_pool.join();
 
     ConsumerStats total_stats;
     for (const auto& stats : consumer_stats) {

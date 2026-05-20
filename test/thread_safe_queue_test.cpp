@@ -1,10 +1,14 @@
 #include "video_labs/consumer.hpp"
 #include "video_labs/producer.hpp"
+#include "video_labs/thread_pool.hpp"
 #include "video_labs/thread_safe_queue.hpp"
 
 #include <cassert>
 #include <chrono>
+#include <cstddef>
+#include <stdexcept>
 #include <thread>
+#include <vector>
 
 namespace {
 
@@ -73,6 +77,36 @@ void test_producer_consumer_with_poison_pill()
     assert(queue.is_empty());
 }
 
+void test_thread_pool_runs_each_worker()
+{
+    constexpr std::size_t worker_count = 4;
+    std::vector<int> visits(worker_count, 0);
+
+    video_labs::ThreadPool pool(worker_count);
+    assert(pool.size() == worker_count);
+
+    pool.start([&visits](std::size_t index) {
+        visits[index] = 1;
+    });
+    pool.join();
+
+    for (const int visit_count : visits) {
+        assert(visit_count == 1);
+    }
+}
+
+void test_thread_pool_rejects_zero_workers()
+{
+    bool threw = false;
+    try {
+        video_labs::ThreadPool pool(0);
+    } catch (const std::invalid_argument&) {
+        threw = true;
+    }
+
+    assert(threw);
+}
+
 } // namespace
 
 int main()
@@ -81,6 +115,8 @@ int main()
     test_try_pop();
     test_blocking_pop_waits_for_producer();
     test_producer_consumer_with_poison_pill();
+    test_thread_pool_runs_each_worker();
+    test_thread_pool_rejects_zero_workers();
 
     return 0;
 }

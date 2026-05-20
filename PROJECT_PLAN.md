@@ -81,10 +81,10 @@ Build a production-grade C++ video processing system using concurrent programmin
 ### Phase 2 Steps
 
 1. **Thread Pool Implementation**
-   - [ ] Design `ThreadPool` class with worker threads
-   - [ ] Implement dynamic worker thread management
+   - [x] Design `ThreadPool` class with worker threads
+   - [x] Implement dynamic worker thread management
    - [x] Add configurable pool size (e.g., 2, 4, 8, 16 workers)
-   - [ ] Refactor consumer logic for pool integration
+   - [x] Refactor consumer logic for pool integration
 
 2. **Benchmarking Infrastructure**
    - [x] Add `BenchmarkTimer` using `std::chrono::steady_clock`
@@ -98,6 +98,7 @@ Build a production-grade C++ video processing system using concurrent programmin
 - `./build/video_labs_phase2 --items 100000`: processed 100000 items with checksum validation.
 - Added `--producer-delay-us`, `--consumer-work`, and `--burst-size` benchmark controls.
 - Added `--consumers` to compare one producer against multiple consumer threads.
+- Added `ThreadPool` and refactored Phase 2 consumers to use it.
 
 3. **Producer Enhancement**
    - [ ] Adjust producer rate to stress-test the queue
