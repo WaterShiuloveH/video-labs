@@ -99,6 +99,7 @@ Build a production-grade C++ video processing system using concurrent programmin
 - Added `--producer-delay-us`, `--consumer-work`, and `--burst-size` benchmark controls.
 - Added `--consumers` to compare one producer against multiple consumer threads.
 - Added `ThreadPool` and refactored Phase 2 consumers to use it.
+- Added optional CSV output with `--csv path`.
 
 3. **Producer Enhancement**
    - [ ] Adjust producer rate to stress-test the queue
@@ -109,7 +110,7 @@ Build a production-grade C++ video processing system using concurrent programmin
    - [x] Create benchmarks: 1 producer vs 1-16 consumers
    - [ ] Run with different queue loads (100K, 1M, 10M items)
    - [ ] Measure CPU utilization and memory usage
-   - [ ] Log results to CSV for analysis
+   - [x] Log results to CSV for analysis
 
 5. **Analysis & Optimization**
    - [ ] Compare single-consumer vs thread pool performance
@@ -202,6 +203,7 @@ make build
 make test
 make run-phase1
 make run-phase2 ITEMS=100000 WORK=100 CONSUMERS=4
+make run-phase2 ITEMS=100000 WORK=100 CONSUMERS=4 CSV=phase2_results.csv
 make test-tsan
 make run-tsan ITEMS=10000 WORK=10 CONSUMERS=4
 make clean

@@ -9,6 +9,8 @@ WORK ?= 100
 CONSUMERS ?= 4
 BURST_SIZE ?= 1
 PRODUCER_DELAY_US ?= 0
+CSV ?=
+CSV_ARG := $(if $(CSV),--csv $(CSV),)
 
 help:
 	@echo "Available commands:"
@@ -26,7 +28,8 @@ help:
 	@echo "  make clean          Remove build dirs"
 	@echo ""
 	@echo "Phase 2 variables:"
-	@echo "  ITEMS=100000 WORK=100 CONSUMERS=4 BURST_SIZE=1 PRODUCER_DELAY_US=0"
+	@echo "  ITEMS=100000 WORK=100 CONSUMERS=4 BURST_SIZE=1 PRODUCER_DELAY_US=0 CSV="
+	@echo "  Example: make run-phase2 ITEMS=100000 WORK=100 CONSUMERS=4 CSV=phase2_results.csv"
 
 configure:
 	cmake -B $(BUILD_DIR) -DCMAKE_BUILD_TYPE=$(BUILD_TYPE)
@@ -41,7 +44,7 @@ run-phase1: build
 	./$(BUILD_DIR)/video_labs_phase1
 
 run-phase2: build
-	./$(BUILD_DIR)/video_labs_phase2 --items $(ITEMS) --consumer-work $(WORK) --consumers $(CONSUMERS) --burst-size $(BURST_SIZE) --producer-delay-us $(PRODUCER_DELAY_US)
+	./$(BUILD_DIR)/video_labs_phase2 --items $(ITEMS) --consumer-work $(WORK) --consumers $(CONSUMERS) --burst-size $(BURST_SIZE) --producer-delay-us $(PRODUCER_DELAY_US) $(CSV_ARG)
 
 configure-tsan:
 	cmake -B $(TSAN_BUILD_DIR) -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) -DSANITIZE_THREAD=ON
@@ -53,7 +56,7 @@ test-tsan: build-tsan
 	ctest --test-dir $(TSAN_BUILD_DIR) --output-on-failure
 
 run-tsan: build-tsan
-	./$(TSAN_BUILD_DIR)/video_labs_phase2 --items $(ITEMS) --consumer-work $(WORK) --consumers $(CONSUMERS) --burst-size $(BURST_SIZE) --producer-delay-us $(PRODUCER_DELAY_US)
+	./$(TSAN_BUILD_DIR)/video_labs_phase2 --items $(ITEMS) --consumer-work $(WORK) --consumers $(CONSUMERS) --burst-size $(BURST_SIZE) --producer-delay-us $(PRODUCER_DELAY_US) $(CSV_ARG)
 
 rebuild: clean build
 

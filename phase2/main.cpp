@@ -4,7 +4,9 @@
 
 #include <chrono>
 #include <cstdlib>
+#include <fstream>
 #include <iostream>
+#include <string>
 #include <string_view>
 #include <thread>
 #include <vector>
@@ -20,12 +22,19 @@ struct BenchmarkConfig {
     int consumer_work = 0;
     int burst_size = 1;
     int consumer_count = 1;
+    std::string csv_path;
 };
 
 struct ConsumerStats {
     int consumed_count = 0;
     long long checksum = 0;
     long long work_checksum = 0;
+};
+
+struct BenchmarkResult {
+    ConsumerStats total_stats;
+    double elapsed_seconds = 0.0;
+    double throughput_items_per_second = 0.0;
 };
 
 void print_usage(std::string_view program_name)
@@ -35,7 +44,8 @@ void print_usage(std::string_view program_name)
               << " [--producer-delay-us non_negative_integer]"
               << " [--consumer-work non_negative_integer]"
               << " [--burst-size positive_integer]"
-              << " [--consumers positive_integer]\n";
+              << " [--consumers positive_integer]"
+              << " [--csv path]\n";
 }
 
 bool parse_non_negative_int(char* raw_value, int& parsed_value)
@@ -94,6 +104,8 @@ bool parse_config(int argc, char* argv[], BenchmarkConfig& config)
                 print_usage(argv[0]);
                 return false;
             }
+        } else if (option == "--csv") {
+            config.csv_path = raw_value;
         } else {
             print_usage(argv[0]);
             return false;
@@ -111,6 +123,44 @@ int simulate_consumer_work(int value, int work_iterations)
     }
 
     return result;
+}
+
+bool should_write_csv_header(const std::string& csv_path)
+{
+    std::ifstream csv_file(csv_path, std::ios::ate);
+    return !csv_file || csv_file.tellg() == 0;
+}
+
+bool append_csv_result(const std::string& csv_path,
+    const BenchmarkConfig& config,
+    const BenchmarkResult& result)
+{
+    std::ofstream csv_file(csv_path, std::ios::app);
+    if (!csv_file) {
+        std::cerr << "Failed to open CSV output: " << csv_path << '\n';
+        return false;
+    }
+
+    if (should_write_csv_header(csv_path)) {
+        csv_file << "phase,producers,consumers,items,producer_delay_us,consumer_work,"
+                    "burst_size,consumed,elapsed_seconds,throughput_items_per_second,"
+                    "checksum,work_checksum\n";
+    }
+
+    csv_file << "2_baseline,"
+             << 1 << ','
+             << config.consumer_count << ','
+             << config.item_count << ','
+             << config.producer_delay_us << ','
+             << config.consumer_work << ','
+             << config.burst_size << ','
+             << result.total_stats.consumed_count << ','
+             << result.elapsed_seconds << ','
+             << result.throughput_items_per_second << ','
+             << result.total_stats.checksum << ','
+             << result.total_stats.work_checksum << '\n';
+
+    return true;
 }
 
 } // namespace
@@ -170,8 +220,12 @@ int main(int argc, char* argv[])
         total_stats.work_checksum += stats.work_checksum;
     }
 
-    const double elapsed_seconds = timer.elapsed_seconds();
-    const double throughput = static_cast<double>(total_stats.consumed_count) / elapsed_seconds;
+    BenchmarkResult result;
+    result.total_stats = total_stats;
+    result.elapsed_seconds = timer.elapsed_seconds();
+    result.throughput_items_per_second =
+        static_cast<double>(total_stats.consumed_count) / result.elapsed_seconds;
+
     const long long expected_checksum =
         (static_cast<long long>(config.item_count - 1) * config.item_count) / 2;
 
@@ -183,14 +237,18 @@ int main(int argc, char* argv[])
     std::cout << "consumer_work=" << config.consumer_work << '\n';
     std::cout << "burst_size=" << config.burst_size << '\n';
     std::cout << "consumed=" << total_stats.consumed_count << '\n';
-    std::cout << "elapsed_seconds=" << elapsed_seconds << '\n';
-    std::cout << "throughput_items_per_second=" << throughput << '\n';
+    std::cout << "elapsed_seconds=" << result.elapsed_seconds << '\n';
+    std::cout << "throughput_items_per_second=" << result.throughput_items_per_second << '\n';
     std::cout << "checksum=" << total_stats.checksum << '\n';
     std::cout << "work_checksum=" << total_stats.work_checksum << '\n';
 
     if (total_stats.consumed_count != config.item_count
         || total_stats.checksum != expected_checksum) {
         std::cerr << "Benchmark validation failed\n";
+        return 1;
+    }
+
+    if (!config.csv_path.empty() && !append_csv_result(config.csv_path, config, result)) {
         return 1;
     }
 
