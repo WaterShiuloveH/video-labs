@@ -108,15 +108,18 @@ Build a production-grade C++ video processing system using concurrent programmin
 
 4. **Benchmark Suite**
    - [x] Create benchmarks: 1 producer vs 1-16 consumers
-   - [ ] Run with different queue loads (100K, 1M, 10M items)
+   - [x] Run with different queue loads (100K, 1M items)
+   - [ ] Run extended large-load benchmark (10M items)
    - [ ] Measure CPU utilization and memory usage
    - [x] Log results to CSV for analysis
 
 5. **Analysis & Optimization**
-   - [ ] Compare single-consumer vs thread pool performance
-   - [ ] Identify bottlenecks (lock contention, cache misses)
+   - [x] Compare single-consumer vs thread pool performance
+   - [x] Identify likely lock contention and scheduling overhead
+   - [ ] Profile cache misses and lower-level CPU bottlenecks
    - [ ] Optimize based on profiling data
-   - [ ] Generate performance report with charts
+   - [x] Generate performance report with tables
+   - [ ] Generate performance charts
 
 ---
 
