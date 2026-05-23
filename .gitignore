@@ -14,4 +14,7 @@ Testing/
 *.so
 *.exe
 
+# Generated benchmark output
+phase2_results*.csv
+
 .DS_Store
